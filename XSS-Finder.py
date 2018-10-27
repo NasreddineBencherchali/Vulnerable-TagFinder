@@ -21,7 +21,7 @@ if pages_path == "":
 regex_list = []
 
 # JSF / PrimeFaces
-regex_list.append(r"<f:selectItems.*itemLabel.*\/>") # If mojarra is < 2.2.6 this is vulnerable to XSS
+regex_list.append(r"<f:selectItems.*itemLabel.*\/>") # If mojarra is < 2.2.6 this is maybe vulnerable to XSS
 regex_list.append(r"<h:outputLink.*\/>") # If we have controle over the data this is vulnerable to XSS
 regex_list.append(r"<h:outputText.*escape.*\/>") # If "escape" is "False" this is vulnerable to XSS
 regex_list.append(r"<p:outputLabel.*escape.*\/>") # If "escape" is "False" this is vulnerable to XSS

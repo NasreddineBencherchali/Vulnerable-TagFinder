@@ -4,7 +4,7 @@
 
 When handling data sometimes programmers needs to render it as it came from it's orignal source. And somtimes this data is controlled by the user, which may lead to a Cross Site Scripting (XSS) attack.
 
-The following is a python script that searches for these **user controlled** / **"vulnerable"** tags (Renders HTML).
+The following is a python script that searches for these **User Controlled** / **"Vulnerable"** tags (Renders HTML).
 
 Currently support:
 
