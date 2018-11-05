@@ -85,6 +85,9 @@ regex_list.append(re.compile(r"<p:inputTextarea.*counterTemplate.*/>"))
 regex_list.append(re.compile(r"<p:button.*href.*/>"))
 regex_list.append(re.compile(r"<p:button.*target.*/>"))
 
+# "legend" is vulnerable to XSS in PF < 6.0.7
+regex_list.append(re.compile(r"<p:chart.*/>"))
+
 # If we have controle over the data in the "href" attribute, this is vulnerable to XSS
 regex_list.append(re.compile(r"<h:outputLink.*/>"))
 
