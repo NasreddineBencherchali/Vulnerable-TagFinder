@@ -71,11 +71,21 @@ regex_list.append(re.compile(r'<p:selectManyMenu[^>]*>(.+?)</p:selectManyMenu\s*
 # If mojarra is < 2.2.6 this is vulnerable to XSS (Uncomment this if you're sure of the version of mojarra)
 # regex_list.append(re.compile(r"<f:selectItems.*itemLabel.*\/>"))
 
+# Vulnerable to XSS in PrimeFaces < 6.0.2
+regex_list.append(re.compile(r"<p:fieldset.*legend.*>"))
+
+# Vulnerable to XSS in "filename" : PrimeFaces < 6.0.30
+regex_list.append(re.compile(r"<p:fileUpload.*/>"))
+
 # Vulnerable to XSS in PrimeFaces < 6.0.30 ; 6.1.16 ; 6.2.1
 regex_list.append(re.compile(r"<p:inputTextarea.*completeMethod.*/>"))
 regex_list.append(re.compile(r"<p:inputTextarea.*counterTemplate.*/>"))
 
-# If we have controle over the data this is vulnerable to XSS
+# Vulnerable to XSS in PrimeFaces < 6.0.30 ; 6.1.16
+regex_list.append(re.compile(r"<p:button.*href.*/>"))
+regex_list.append(re.compile(r"<p:button.*target.*/>"))
+
+# If we have controle over the data in the "href" attribute, this is vulnerable to XSS
 regex_list.append(re.compile(r"<h:outputLink.*/>"))
 
 # If "escape" is present and it's equal to "False" this is vulnerable to XSS
@@ -88,7 +98,7 @@ with open("TagList.txt", "w") as TagListFile:
     # Loop on every file on the list of pages
     for each_page in list_of_all_pages:
         # Open the file for read
-        with open(each_page, "r") as page:
+        with open(each_page, "r", encoding="utf-8") as page:
             # Grab the content of the file as it is
             page_content = page.read()
             # Start looping through our regular expressions list
@@ -117,7 +127,7 @@ with open("TagList.txt", "w") as TagListFile:
                                     elements = elements[xss_itemLabel + len("itemLabel") + 2:][:elements[xss_itemLabel
                                                 + len("itemLabel") + 2:].find('"')]
                                 
-                                if "bundle" not in elements and "#{" in elements:
+                                if "#{bundle" not in elements and "#{" in elements:
                                     elements = org_elements
                                     filtered_list.append(elements.strip("\n"))
                                 
@@ -143,7 +153,7 @@ with open("TagList.txt", "w") as TagListFile:
                                     elements = elements[xss_headerText + len("headerText") + 2:][:elements[xss_headerText
                                                 + len("headerText") + 2:].find('"')]
                                 
-                                if "bundle" not in elements and "#{" in elements:
+                                if "#{bundle" not in elements and "#{" in elements:
                                     elements = org_elements
                                     filtered_list.append(elements.strip("\n"))
                                 
@@ -162,6 +172,9 @@ with open("TagList.txt", "w") as TagListFile:
                             for elements in list_of_tags:
                                 # Save the original value of the "Tag"
                                 org_elements = elements
+
+                                # This variable describe if there is a "<p:fileupload" tag
+                                file_upload = False
 
                                 if "<p:tab" in elements or "<p:commandButton" in elements:
                                     xss_title = elements.find('title')
@@ -244,10 +257,44 @@ with open("TagList.txt", "w") as TagListFile:
                                         elements = elements[xss_labelTemplate + len("labelTemplate") + 2:][:elements[xss_labelTemplate
                                                     + len("labelTemplate") + 2:].find('"')]
 
+                                elif "<p:fieldset" in elements:
+                                    xss_legend = elements.find('legend')
+                                    if xss_legend == -1:
+                                        break
+                                    else:
+                                        elements = elements[xss_legend + len("legend") + 2:][:elements[xss_legend
+                                                    + len("legend") + 2:].find('"')]
+                                                    
+                                elif "<p:fileUpload" in elements:
+                                    # If the tag is found we explicitly add it to the list for further inspection later
+                                    filtered_list.append(elements.strip("\n"))
+                                    # We set this to "True" to escape the the next check
+                                    file_upload = True
+
+                                elif "<p:button" in elements:
+                                    xss_href = elements.find('href')
+                                    if xss_href == -1:
+                                        elements_xss_href = ""
+                                    else:
+                                        elements_xss_href = elements[xss_href + len("href") + 2:][:elements[xss_href
+                                                                    + len("href") + 2:].find('"')]
+
+                                    xss_target = elements.find('target')
+                                    if xss_target == -1:
+                                        elements_target = ""
+                                    else:
+                                        elements_target = elements[xss_target + len("target") + 2:][:elements[xss_target
+                                                                    + len("target") + 2:].find('"')]
+
+                                    if elements_xss_href == "" and elements_target == "":
+                                        break
+                                    else:
+                                        elements = elements_xss_href + " - " + elements_target  
+
                                 # "Bundle" indicates data coming from the server (Not user controlled) 
                                 # so we remove strings that contains it, and "#{" indicates dynamic data 
                                 # (Maybe it's user controlled) so we keep it 
-                                if "bundle" not in elements and "#{" in elements:
+                                if "#{bundle" not in elements and "#{" in elements and not file_upload:
                                     elements = org_elements
                                     filtered_list.append(elements.strip("\n"))
                                 
