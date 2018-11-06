@@ -224,7 +224,7 @@ with open("TagList.txt", "w") as TagListFile:
                                         elements = elements[xss_addLabel + len("addLabel") + 2:][:elements[xss_addLabel
                                                     + len("addLabel") + 2:].find('"')]
 
-                                elif "<pslideMenu" in elements:
+                                elif "<p:slideMenu" in elements:
                                     xss_backLabel = elements.find('backLabel')
                                     if xss_backLabel == -1:
                                         break
