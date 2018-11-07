@@ -39,27 +39,27 @@ regex_list = []
 
 # The "title" attribute doesn't escape XSS in PrimeFaces prior to 6.3 
 regex_list.append(re.compile(r'<p:tab.*title.*>'))
-regex_list.append(re.compile(r"<p:commandButton.*title.*/>"))
+regex_list.append(re.compile(r"<p:commandButton.*title.*>"))
 
 # The "headerText" attribute doesn't escape XSS in PrimeFaces prior to 6.3
-regex_list.append(re.compile(r'<p:carousel.*headerText.*/>'))
+regex_list.append(re.compile(r'<p:carousel.*headerText.*>'))
 
 # The "footerText" attribute doesn't escape XSS in PrimeFaces prior to 6.3
-regex_list.append(re.compile(r'<p:carousel.*footerText.*/>'))
+regex_list.append(re.compile(r'<p:carousel.*footerText.*>'))
 
 # The "emptyMessage" attribute doesn't escape XSS in PrimeFaces prior to 6.3
-regex_list.append(re.compile(r"<p:dataGrid.*emptyMessage.*/>"))
-regex_list.append(re.compile(r"<p:dataList.*emptyMessage.*/>"))
-regex_list.append(re.compile(r"<p:treeTable.*emptyMessage.*/>")) 
+regex_list.append(re.compile(r"<p:dataGrid.*emptyMessage.*>"))
+regex_list.append(re.compile(r"<p:dataList.*emptyMessage.*>"))
+regex_list.append(re.compile(r"<p:treeTable.*emptyMessage.*>")) 
 
 # The "addLabel" attribute doesn't escape XSS in PrimeFaces prior to 6.3
-regex_list.append(re.compile(r"<p:pickList.*addLabel.*/>"))
+regex_list.append(re.compile(r"<p:pickList.*addLabel.*>"))
 
 # The "labelTemplate" attribute doesn't escape XSS in PrimeFaces prior to 6.3
-regex_list.append(re.compile(r"<p:progressBar.*labelTemplate.*/>"))
+regex_list.append(re.compile(r"<p:progressBar.*labelTemplate.*>"))
 
 # The "backLabel" attribute doesn't escape XSS in PrimeFaces prior to 6.3
-regex_list.append(re.compile(r"<p:slideMenu.*backLabel.*/>"))
+regex_list.append(re.compile(r"<p:slideMenu.*backLabel.*>"))
 
 # This is vulnerable to XSS, if it contains a "<p:column" tag, and PrimeFaces is > 6.3
 regex_list.append(re.compile(r'<p:selectOneMenu[^>]*>(.+?)</p:selectOneMenu\s*>', re.IGNORECASE|re.MULTILINE|re.DOTALL))
@@ -69,30 +69,30 @@ regex_list.append(re.compile(r'<p:treeTable[^>]*>(.+?)</p:treeTable\s*>', re.IGN
 regex_list.append(re.compile(r'<p:selectManyMenu[^>]*>(.+?)</p:selectManyMenu\s*>', re.IGNORECASE|re.MULTILINE|re.DOTALL))
 
 # If mojarra is < 2.2.6 this is vulnerable to XSS (Uncomment this if you're sure of the version of mojarra)
-# regex_list.append(re.compile(r"<f:selectItems.*itemLabel.*\/>"))
+# regex_list.append(re.compile(r"<f:selectItems.*itemLabel.*>"))
 
 # Vulnerable to XSS in PrimeFaces < 6.0.2
 regex_list.append(re.compile(r"<p:fieldset.*legend.*>"))
 
 # Vulnerable to XSS in "filename" : PrimeFaces < 6.0.30
-regex_list.append(re.compile(r"<p:fileUpload.*/>"))
+regex_list.append(re.compile(r"<p:fileUpload[\w\W]+?>"))
 
 # Vulnerable to XSS in PrimeFaces < 6.0.30 ; 6.1.16 ; 6.2.1
-regex_list.append(re.compile(r"<p:inputTextarea.*completeMethod.*/>"))
-regex_list.append(re.compile(r"<p:inputTextarea.*counterTemplate.*/>"))
+regex_list.append(re.compile(r"<p:inputTextarea.*completeMethod.*>"))
+regex_list.append(re.compile(r"<p:inputTextarea.*counterTemplate.*>"))
 
 # Vulnerable to XSS in PrimeFaces < 6.0.30 ; 6.1.16
-regex_list.append(re.compile(r"<p:button.*href.*/>"))
-regex_list.append(re.compile(r"<p:button.*target.*/>"))
+regex_list.append(re.compile(r"<p:button.*href.*>"))
+regex_list.append(re.compile(r"<p:button.*target.*>"))
 
 # "legend" is vulnerable to XSS in PF < 6.0.7
-regex_list.append(re.compile(r"<p:chart.*/>"))
+regex_list.append(re.compile(r"<p:chart.*>"))
 
 # If we have controle over the data in the "href" attribute, this is vulnerable to XSS
-regex_list.append(re.compile(r"<h:outputLink.*/>"))
+regex_list.append(re.compile(r"<h:outputLink[\w\W]+?>"))
 
 # If "escape" is present and it's equal to "False" this is vulnerable to XSS
-regex_list.append(re.compile(r".*escape=.*/>"))
+regex_list.append(re.compile(r"<.*escape=[\w\W]+?>"))
 
 if len(regex_list) == 0:
     print("[*] You're Regex List is empty [*]")
