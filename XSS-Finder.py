@@ -94,6 +94,9 @@ regex_list.append(re.compile(r"<h:outputLink[\w\W]+?>"))
 # If "escape" is present and it's equal to "False" this is vulnerable to XSS
 regex_list.append(re.compile(r"<.*escape=[\w\W]+?>"))
 
+# Search for "DataExporter" component, to find if there is a CSV or XML injection possibility
+regex_list.append(re.compile(r"<p:dataExporter.*>"))
+
 if len(regex_list) == 0:
     print("[*] You're Regex List is empty [*]")
 
@@ -178,6 +181,9 @@ with open("TagList.txt", "w") as TagListFile:
 
                                 # This variable describe if there is a "<p:fileupload" tag
                                 file_upload = False
+
+                                # This variable describe if there is a "<p:dataExporter" tag
+                                data_Exporter = False
 
                                 if "<p:tab" in elements or "<p:commandButton" in elements:
                                     xss_title = elements.find('title')
@@ -273,6 +279,12 @@ with open("TagList.txt", "w") as TagListFile:
                                     filtered_list.append(elements.strip("\n"))
                                     # We set this to "True" to escape the the next check
                                     file_upload = True
+                                
+                                elif "<p:dataExporter" in elements:
+                                    # If the tag is found we explicitly add it to the list for further inspection later
+                                    filtered_list.append(elements.strip("\n"))
+                                    # We set this to "True" to escape the the next check
+                                    data_Exporter = True
 
                                 elif "<p:button" in elements:
                                     xss_href = elements.find('href')
@@ -297,7 +309,7 @@ with open("TagList.txt", "w") as TagListFile:
                                 # "Bundle" indicates data coming from the server (Not user controlled) 
                                 # so we remove strings that contains it, and "#{" indicates dynamic data 
                                 # (Maybe it's user controlled) so we keep it 
-                                if "#{bundle" not in elements and "#{" in elements and not file_upload:
+                                if "#{bundle" not in elements and "#{" in elements and (not file_upload and not data_Exporter):
                                     elements = org_elements
                                     filtered_list.append(elements.strip("\n"))
                                 
