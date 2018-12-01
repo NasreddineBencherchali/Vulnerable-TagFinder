@@ -6,7 +6,7 @@ Vulnerable-TagFinder parses every web page (xhtml, jsp) in your project, in sear
 
 * Known vulnerable tags for XSS attacks.
 * "data exporter" tag for possible CSV injection.
-* Tags that have the "transiant" attribute set to "true" for possible CSRF attacks.
+* Tags that have the "transient" attribute set to "true" for possible CSRF attacks.
 * Tags that have the "escape" attribute set to "false" for possible XSS attacks.
 
 Currently support tags for the following libraries :
