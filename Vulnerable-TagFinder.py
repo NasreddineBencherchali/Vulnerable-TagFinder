@@ -3,8 +3,23 @@ import argparse
 import re
 import os
 
+print("""
+              _                      _     _              
+ /\   /\_   _| |_ __   ___ _ __ __ _| |__ | | ___         
+ \ \ / / | | | | '_ \ / _ \ '__/ _` | '_ \| |/ _ \        
+  \ V /| |_| | | | | |  __/ | | (_| | |_) | |  __/        
+   \_/  \__,_|_|_| |_|\___|_|  \__,_|_.__/|_|\___|        
+                                                          
+ _____                        ___ _           _           
+/__   \__ _  __ _            / __(_)_ __   __| | ___ _ __ 
+  / /\/ _` |/ _` |  _____   / _\ | | '_ \ / _` |/ _ \ '__|
+ / / | (_| | (_| | |_____| / /   | | | | | (_| |  __/ |   
+ \/   \__,_|\__, |         \/    |_|_| |_|\__,_|\___|_|   
+            |___/                                         
+""")
+
 # Create an argparser instance
-parser = argparse.ArgumentParser(description='XSS Finder - Vulnerable Tags are always hidden until you look for them')
+parser = argparse.ArgumentParser(description='Vulnerable Tag Finder - Vulnerable Tags are always hidden until you look for them')
 
 # We add and argument "p" 
 parser.add_argument('-p', '--path', dest='pages_path', required=True, 
@@ -94,8 +109,12 @@ regex_list.append(re.compile(r"<h:outputLink[\w\W]+?>"))
 # If "escape" is present and it's equal to "False" this is vulnerable to XSS
 regex_list.append(re.compile(r"<.*escape=[\w\W]+?>"))
 
-# Search for "DataExporter" component, to find if there is a CSV or XML injection possibility
-regex_list.append(re.compile(r"<p:dataExporter.*>"))
+# Search for "DataExporter" component, to find if there is a CSV injection possibility
+regex_list.append(re.compile(r"<p:dataExporter[\w\W]+?>"))
+
+# Search for "transient" attribute, if it's equal to "true" then maybe this is vulnerable to CSRF
+regex_list.append(re.compile(r"<.*transient.*>"))
+
 
 if len(regex_list) == 0:
     print("[*] You're Regex List is empty [*]")
@@ -179,13 +198,24 @@ with open("TagList.txt", "w") as TagListFile:
                                 # Save the original value of the "Tag"
                                 org_elements = elements
 
+                                # These boolean are added to explicitly add their related "tags" / "attributes" for further inspection, weather they contain dynamic data or not.
+
                                 # This variable describe if there is a "<p:fileupload" tag
                                 file_upload = False
 
                                 # This variable describe if there is a "<p:dataExporter" tag
                                 data_Exporter = False
 
-                                if "<p:tab" in elements or "<p:commandButton" in elements:
+                                # This varibale describe if there is a "transient" attribute set to "true"
+                                transient_attribute = False
+
+                                if "transient=" in elements and "transient" in str_regex:
+                                    # If the attribute is found we explicitly add it to the list for further inspection later
+                                    filtered_list.append(elements.strip("\n"))
+                                    # We set this to "True" to escape the the next check
+                                    transient_attribute = True
+
+                                elif "<p:tab" in elements or "<p:commandButton" in elements:
                                     xss_title = elements.find('title')
                                     if xss_title == -1:
                                         break
@@ -285,7 +315,7 @@ with open("TagList.txt", "w") as TagListFile:
                                     filtered_list.append(elements.strip("\n"))
                                     # We set this to "True" to escape the the next check
                                     data_Exporter = True
-
+                                
                                 elif "<p:button" in elements:
                                     xss_href = elements.find('href')
                                     if xss_href == -1:
@@ -309,7 +339,7 @@ with open("TagList.txt", "w") as TagListFile:
                                 # "Bundle" indicates data coming from the server (Not user controlled) 
                                 # so we remove strings that contains it, and "#{" indicates dynamic data 
                                 # (Maybe it's user controlled) so we keep it 
-                                if "#{bundle" not in elements and "#{" in elements and (not file_upload and not data_Exporter):
+                                if "#{bundle" not in elements and "#{" in elements and (not file_upload and not data_Exporter and not transient_attribute):
                                     elements = org_elements
                                     filtered_list.append(elements.strip("\n"))
                                 
