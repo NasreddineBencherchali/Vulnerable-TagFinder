@@ -2,6 +2,23 @@
 import argparse
 import re
 import os
+from packaging import version
+
+# This function will delete elements based on a list of indices
+def delete_from_list(indices_list):
+    # We get both the global regex_list and the regex_list_repr
+    global regex_list
+    global regex_list_repr
+    
+    # We loop on the indices list with an enumerator because we need to reduce the index by the number of the index in the list each time we remove an element.
+    # For example : lst = [1,2,3,4] ; indices = [0,2]
+    # After we remove the first element indicated by the "indices" list from the list "lst"
+    # Every element has shifted by one so we need to account for that in our loop
+    for index, to_delete_index in enumerate(indices_list):
+        to_delete_index -= index
+
+        del regex_list_repr[to_delete_index]
+        del regex_list[to_delete_index]
 
 print("""
               _                      _     _              
@@ -19,17 +36,52 @@ print("""
 """)
 
 # Create an argparser instance
-parser = argparse.ArgumentParser(description='Vulnerable Tag Finder - Vulnerable Tags are always hidden until you look for them')
+parser = argparse.ArgumentParser(description='Vulnerable Tag Finder - Vulnerable Tags are always hidden until you look for them.')
 
-# We add and argument "p" 
+# We add arguments
 parser.add_argument('-p', '--path', dest='pages_path', required=True, 
-                    help='The path of the folder containing the pages search')
+                    help='The path of the folder containing the pages search.')
+
+parser.add_argument('-t', '--tech', dest='techs_names', required=False, nargs='*', 
+                    help='The technologies used in the project (Support JSF, PrimeFaces) seperated by a semicolon.')
+
+parser.add_argument('-l', '--libVer', dest='libs_versions', required=False, nargs='*', 
+                    help='The versions of the libraries used in the project seperated by a semicolon.')
 
 # Parse the passed arguments
 args = parser.parse_args()
 
+# Check if both arguments "-t" and -"l" are passed
+if (vars(args)['techs_names'] is not None) and (vars(args)['libs_versions'] is not None) :
+    # Check if both "techs_names" and "libs_versions" are not empty
+    if len(vars(args)['techs_names']) == 0 or len(vars(args)['libs_versions']) == 0:
+        print("[*] One or both of the arguments are empty  [*]")
+        exit()
+    else:
+        # If both "-t" and "-l" arguments are present, they must have the same length
+        if len(vars(args)['techs_names'][0].split(',')) != len(vars(args)['libs_versions'][0].split(',')) :
+            print("[*] Both '-t' and '-l' arguments must have same length  [*]")
+            exit()
+
+# Check if "-t" argument is passed the "-l" must be present as well, and vice versa
+elif ((vars(args)['techs_names'] is None) and (vars(args)['libs_versions'] is not None)) or ((vars(args)['techs_names'] is not None) and (vars(args)['libs_versions'] is None)) :
+    print("[*] Both '-t' and '-l' arguments must be present  [*]")
+    exit()
+
+
 # Path to the application Web Pages
 pages_path = args.pages_path
+
+# We check if the arguments were not sent then we set them as empty lists
+if args.techs_names is not None:
+    techs_names = [tech_names.strip() for tech_names in args.techs_names[0].strip().split(',')]
+else:
+    techs_names = []
+
+if args.libs_versions is not None:
+    libs_versions = [libs_ver.strip() for libs_ver in args.libs_versions[0].strip().split(',')]
+else:
+    libs_versions = []
 
 if pages_path == "":
     print("[*] There is no path to search [*]")
@@ -50,8 +102,17 @@ for root, dirs, files in os.walk(pages_path):
 # Regular expressions used to search the pages
 regex_list = []
 
-# JSF / PrimeFaces
+################################ 
+########### JSF TAGS  ##########
+################################
 
+# If mojarra is < 2.2.6 this is vulnerable to XSS (Uncomment this if you're sure of the version of mojarra - Could lead to a lot of false positive)
+# regex_list.append(re.compile(r"<f:selectItems.*itemLabel.*>"))
+
+################################ 
+######## PrimeFaces TAGS #######
+################################
+ 
 # The "title" attribute doesn't escape XSS in PrimeFaces prior to 6.3 
 regex_list.append(re.compile(r'<p:tab.*title.*>'))
 regex_list.append(re.compile(r"<p:commandButton.*title.*>"))
@@ -83,9 +144,6 @@ regex_list.append(re.compile(r'<p:treeTable[^>]*>(.+?)</p:treeTable\s*>', re.IGN
 # This is vulnerable to XSS, if it contains a "<f:selectItems" tag, and PrimeFaces is > 6.0.2
 regex_list.append(re.compile(r'<p:selectManyMenu[^>]*>(.+?)</p:selectManyMenu\s*>', re.IGNORECASE|re.MULTILINE|re.DOTALL))
 
-# If mojarra is < 2.2.6 this is vulnerable to XSS (Uncomment this if you're sure of the version of mojarra)
-# regex_list.append(re.compile(r"<f:selectItems.*itemLabel.*>"))
-
 # Vulnerable to XSS in PrimeFaces < 6.0.2
 regex_list.append(re.compile(r"<p:fieldset.*legend.*>"))
 
@@ -106,6 +164,10 @@ regex_list.append(re.compile(r"<p:chart.*>"))
 # If we have controle over the data in the "href" attribute, this is vulnerable to XSS
 regex_list.append(re.compile(r"<h:outputLink[\w\W]+?>"))
 
+# Search for "<p:editor" and "<p:textEditor" as they maybe vulnerable to XSS
+regex_list.append(re.compile(r'<p:textEditor[^>]*>(.+?)</p:textEditor\s*>', re.IGNORECASE|re.MULTILINE|re.DOTALL))
+regex_list.append(re.compile(r"<p:editor[\w\W]+?>"))
+
 # If "escape" is present and it's equal to "False" this is vulnerable to XSS
 regex_list.append(re.compile(r"<.*escape=[\w\W]+?>"))
 
@@ -113,9 +175,56 @@ regex_list.append(re.compile(r"<.*escape=[\w\W]+?>"))
 regex_list.append(re.compile(r"<p:dataExporter[\w\W]+?>"))
 
 # Search for "transient" attribute, if it's equal to "true" then maybe this is vulnerable to CSRF
-regex_list.append(re.compile(r"<.*transient.*>"))
+regex_list.append(re.compile(r"<.*transient=.*>"))
 
+# Search if the application is printing any StackTraces
+regex_list.append(re.compile(r"#{.*StackTrace.*}", re.IGNORECASE))
 
+# Search for HTML, XHTML, JSP comments
+regex_list.append(re.compile(r"<!--[\w\W]+?-->")) # HTML/XHTML
+regex_list.append(re.compile(r"<%--[\w\W]+?--%>")) # JSP
+
+if not (techs_names == [] or libs_versions == []):
+    # We convert the regex to string so we can compare them
+    regex_list_repr = [regex.__repr__()[10:] for regex in regex_list]
+
+    for tech, lib_v in zip(techs_names, libs_versions):
+        if tech.lower() == "primefaces" or tech.lower() == "pf":
+
+            # We check each version if it's inferior or superior and we removes tags accordingly
+            if not(version.parse(lib_v) < version.parse("6.3")):
+                # We search for the tags with an enumerator to get the index matchin the string
+                indices = [indice for indice, string in enumerate(regex_list_repr) if "<p:tab" in string or "<p:commandButton" in string or "<p:carousel" in string or "<p:dataGrid" in string or "<p:dataList" in string or "<p:treeTable" in string or "<p:pickList" in string or "<p:progressBar" in string or "<p:slideMenu" in string or "<p:selectOneMenu" in string]
+                # We then send the list if indices to our function that'll delete them from the original regex list
+                delete_from_list(indices)
+                
+            if not(version.parse(lib_v) < version.parse("6.2.1")):
+                indices = [indice for indice, string in enumerate(regex_list_repr) if "<p:inputTextarea" in string]
+                delete_from_list(indices)
+
+            # This version is a sepcial case because the "<p:button" tag is vulnerable in before both 6.1.16 and 6.0.29
+            if not(version.parse(lib_v) < version.parse("6.1.16") and version.parse(lib_v) < version.parse("6.0.30")):
+                if version.parse(lib_v) < version.parse("6.2.1") and version.parse(lib_v) < version.parse("6.0.30"):
+                    indices = [indice for indice, string in enumerate(regex_list_repr) if "<p:button" in string]
+                else:
+                    indices = [indice for indice, string in enumerate(regex_list_repr) if "<p:inputTextarea" in string or "<p:button" in string]
+                delete_from_list(indices)
+            
+            if not(version.parse(lib_v) < version.parse("6.0.7")):
+                indices = [indice for indice, string in enumerate(regex_list_repr) if "<p:chart" in string]
+                delete_from_list(indices)
+
+            if not(version.parse(lib_v) < version.parse("6.0.2")):
+                indices = [indice for indice, string in enumerate(regex_list_repr) if "<p:selectManyMenu" in string or "<p:fieldset" in string]
+                delete_from_list(indices)
+
+        elif tech.lower() == "jsf" :
+
+            if not(version.parse(lib_v) < version.parse("2.2.6")):
+                indices = [indice for indice, string in enumerate(regex_list_repr) if "<f:selectItems" in string]
+                delete_from_list(indices)
+
+exit()
 if len(regex_list) == 0:
     print("[*] You're Regex List is empty [*]")
 
@@ -209,11 +318,29 @@ with open("TagList.txt", "w") as TagListFile:
                                 # This varibale describe if there is a "transient" attribute set to "true"
                                 transient_attribute = False
 
+                                # This varibale describe if there is a "transient" attribute set to "true"
+                                stackTrace_attribute = False
+
+                                # This varibale describe if there is an (JSP, XHTML, HTML) comment
+                                comment_attribute = False
+
                                 if "transient=" in elements and "transient" in str_regex:
                                     # If the attribute is found we explicitly add it to the list for further inspection later
                                     filtered_list.append(elements.strip("\n"))
                                     # We set this to "True" to escape the the next check
                                     transient_attribute = True
+                                
+                                if "StackTrace".lower() in elements.lower() and "StackTrace" in str_regex:
+                                    # If the word "StackTrace" is found we explicitly add it to the list for further inspection later
+                                    filtered_list.append(elements.strip("\n"))
+                                    # We set this to "True" to escape the the next check
+                                    stackTrace_attribute = True
+                                
+                                if  "<%--" in str_regex or "<!--" in str_regex:
+                                    # If the on of the comments is found we explicitly add it to the list for further inspection later
+                                    filtered_list.append(elements.strip("\n"))
+                                    # We set this to "True" to escape the the next check
+                                    comment_attribute = True
 
                                 elif "<p:tab" in elements or "<p:commandButton" in elements:
                                     xss_title = elements.find('title')
@@ -339,7 +466,7 @@ with open("TagList.txt", "w") as TagListFile:
                                 # "Bundle" indicates data coming from the server (Not user controlled) 
                                 # so we remove strings that contains it, and "#{" indicates dynamic data 
                                 # (Maybe it's user controlled) so we keep it 
-                                if "#{bundle" not in elements and "#{" in elements and (not file_upload and not data_Exporter and not transient_attribute):
+                                if "#{bundle" not in elements and "#{" in elements and (not file_upload and not data_Exporter and not transient_attribute and not stackTrace_attribute and not comment_attribute):
                                     elements = org_elements
                                     filtered_list.append(elements.strip("\n"))
                                 

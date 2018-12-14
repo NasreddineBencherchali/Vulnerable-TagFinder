@@ -8,14 +8,23 @@ Vulnerable-TagFinder parses every web page (xhtml, jsp) in your project, in sear
 * "data exporter" tag for possible CSV injection.
 * Tags that have the "transient" attribute set to "true" for possible CSRF attacks.
 * Tags that have the "escape" attribute set to "false" for possible XSS attacks.
+* HTML, XHTML and JSP comments
 
 Currently support tags for the following libraries :
 
 * JSF
 * PrimeFaces
 
+## Requirements
+
+* Packaging (pip install packaging)
+
 ## Usage
 
 ```bash
 python Vulnerable-TagFinder.py -h
+```
+
+```bash
+python Vulnerable-TagFinder.py -p "/path/to/pages" -t "jsf, primefaces" -l "2.2, 6.1"
 ```
