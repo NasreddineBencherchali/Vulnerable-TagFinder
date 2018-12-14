@@ -224,7 +224,6 @@ if not (techs_names == [] or libs_versions == []):
                 indices = [indice for indice, string in enumerate(regex_list_repr) if "<f:selectItems" in string]
                 delete_from_list(indices)
 
-exit()
 if len(regex_list) == 0:
     print("[*] You're Regex List is empty [*]")
 
